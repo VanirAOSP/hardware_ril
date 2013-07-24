@@ -27,7 +27,11 @@ extern "C" {
 #endif
 
 #define RIL_VERSION 7     /* Current version */
+#ifdef LEGACY_RIL
+#define RIL_VERSION_MIN 2 /* Minimum RIL_VERSION supported */
+#else
 #define RIL_VERSION_MIN 6 /* Minimum RIL_VERSION supported */
+#endif
 
 #define CDMA_ALPHA_INFO_BUFFER_LENGTH 64
 #define CDMA_NUMBER_INFO_BUFFER_LENGTH 81
@@ -102,7 +106,8 @@ typedef enum {
     RADIO_TECH_EHRPD = 13,
     RADIO_TECH_LTE = 14,
     RADIO_TECH_HSPAP = 15, // HSPA+
-    RADIO_TECH_GSM = 16 // Only supports voice
+    RADIO_TECH_GSM = 16, // Only supports voice
+    RADIO_TECH_DCHSPAP = 30
 } RIL_RadioTechnology;
 
 // Do we want to split Data from Voice and the use
@@ -202,6 +207,7 @@ typedef struct {
  */
 typedef struct {
     int             status;     /* A RIL_DataCallFailCause, 0 which is PDP_FAIL_NONE if no error */
+#ifndef HCRADIO
     int             suggestedRetryTime; /* If status != 0, this fields indicates the suggested retry
                                            back-off timer value RIL wants to override the one
                                            pre-configured in FW.
@@ -209,6 +215,7 @@ typedef struct {
                                            The value < 0 means no value is suggested.
                                            The value 0 means retry should be done ASAP.
                                            The value of MAX_INT(0x7fffffff) means no retry. */
+#endif
     int             cid;        /* Context ID, uniquely identifies this call */
     int             active;     /* 0=inactive, 1=active/physical link down, 2=active/physical link up */
     char *          type;       /* One of the PDP_type values in TS 27.007 section 10.1.1.
