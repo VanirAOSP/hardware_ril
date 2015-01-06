@@ -7,7 +7,7 @@ LOCAL_SRC_FILES:= \
     librilutils.c \
     record_stream.c
 
-LOCAL_CFLAGS :=
+LOCAL_CFLAGS := $(RIL_EXTRA_CFLAGS)
 
 LOCAL_MODULE:= librilutils
 
@@ -24,7 +24,7 @@ LOCAL_SRC_FILES:= \
 
 LOCAL_STATIC_LIBRARIES :=
 
-LOCAL_CFLAGS :=
+LOCAL_CFLAGS := $(RIL_EXTRA_CFLAGS)
 
 LOCAL_MODULE:= librilutils_static
 
