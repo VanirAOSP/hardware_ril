@@ -52,7 +52,7 @@ static void *noopRemoveWarning( void *a ) { return a; }
 #define PPP_TTY_PATH "eth0"
 
 // Default MTU value
-#define DEFAULT_MTU 1400
+#define DEFAULT_MTU 1500
 
 #ifdef USE_TI_COMMANDS
 
@@ -452,8 +452,8 @@ static void requestOrSendDataCallList(RIL_Token *t)
          p_cur = p_cur->p_next)
         n++;
 
-    RIL_Data_Call_Response_v9_CAF *responses =
-        alloca(n * sizeof(RIL_Data_Call_Response_v9_CAF));
+    RIL_Data_Call_Response_v11 *responses =
+        alloca(n * sizeof(RIL_Data_Call_Response_v11));
 
     int i;
     for (i = 0; i < n; i++) {
@@ -470,7 +470,7 @@ static void requestOrSendDataCallList(RIL_Token *t)
         responses[i].mtu = 0;
     }
 
-    RIL_Data_Call_Response_v9_CAF *response = responses;
+    RIL_Data_Call_Response_v11 *response = responses;
     for (p_cur = p_response->p_intermediates; p_cur != NULL;
          p_cur = p_cur->p_next) {
         char *line = p_cur->line;
@@ -603,11 +603,11 @@ static void requestOrSendDataCallList(RIL_Token *t)
 
     if (t != NULL)
         RIL_onRequestComplete(*t, RIL_E_SUCCESS, responses,
-                              n * sizeof(RIL_Data_Call_Response_v9_CAF));
+                              n * sizeof(RIL_Data_Call_Response_v11));
     else
         RIL_onUnsolicitedResponse(RIL_UNSOL_DATA_CALL_LIST_CHANGED,
                                   responses,
-                                  n * sizeof(RIL_Data_Call_Response_v9_CAF));
+                                  n * sizeof(RIL_Data_Call_Response_v11));
 
     return;
 
@@ -1764,47 +1764,7 @@ error:
 
 }
 
-static void requestGetDataCallProfile(void *data, size_t datalen, RIL_Token t)
-{
-    //ATResponse *p_response = NULL;
-    char *response = NULL;
-    char *respPtr = NULL;
-    int  responseLen = 0;
-    int  numProfiles = 1; // hard coded to return only one profile
-    int  i = 0;
-
-    // TBD: AT command support
-
-    int mallocSize = sizeof(RIL_DataCallProfileInfo);
-
-    response = (char*)alloca(mallocSize + sizeof(int));
-    respPtr = response;
-    memcpy(respPtr, &numProfiles, sizeof(numProfiles));
-    respPtr += sizeof(numProfiles);
-    responseLen += sizeof(numProfiles);
-
-    // Fill up 'numProfiles' dummy 'RIL_DataCallProfileInfo;
-    for (i = 0; i < numProfiles; i++)
-    {
-        RIL_DataCallProfileInfo dummyProfile;
-
-        // Adding arbitrary values for the dummy response
-        dummyProfile.profileId = i + 1;
-        dummyProfile.priority = i + 10;
-        RLOGI("profileId %d priority %d", dummyProfile.profileId, dummyProfile.priority);
-
-        responseLen += sizeof(RIL_DataCallProfileInfo);
-        memcpy(respPtr, (char*)&dummyProfile, sizeof(RIL_DataCallProfileInfo));
-        respPtr += sizeof(RIL_DataCallProfileInfo);
-    }
-
-    RLOGI("requestGetDataCallProfile():reponseLen:%d, %d profiles", responseLen, i);
-    RIL_onRequestComplete(t, RIL_E_SUCCESS, response, responseLen);
-
-    return;
-}
-
-static void requestSMSAcknowledge(void *data, size_t datalen, RIL_Token t)
+static void requestSMSAcknowledge(void *data, size_t datalen __unused, RIL_Token t)
 {
     int ackSuccess;
     int err;
@@ -2046,7 +2006,7 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
      * when RADIO_STATE_UNAVAILABLE.
      */
     if (sState == RADIO_STATE_UNAVAILABLE
-        && !(request == RIL_REQUEST_GET_SIM_STATUS || request == RIL_REQUEST_GET_DATA_CALL_PROFILE)
+        && request != RIL_REQUEST_GET_SIM_STATUS
     ) {
         RIL_onRequestComplete(t, RIL_E_RADIO_NOT_AVAILABLE, NULL, 0);
         return;
@@ -2057,8 +2017,7 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
      */
     if (sState == RADIO_STATE_OFF
         && !(request == RIL_REQUEST_RADIO_POWER
-            || request == RIL_REQUEST_GET_SIM_STATUS
-            || request == RIL_REQUEST_GET_DATA_CALL_PROFILE)
+            || request == RIL_REQUEST_GET_SIM_STATUS)
     ) {
         RIL_onRequestComplete(t, RIL_E_RADIO_NOT_AVAILABLE, NULL, 0);
         return;
@@ -2207,9 +2166,6 @@ onRequest (int request, void *data, size_t datalen, RIL_Token t)
             break;
         case RIL_REQUEST_SETUP_DATA_CALL:
             requestSetupDataCall(data, datalen, t);
-            break;
-        case RIL_REQUEST_GET_DATA_CALL_PROFILE:
-            requestGetDataCallProfile(data, datalen, t);
             break;
         case RIL_REQUEST_SMS_ACKNOWLEDGE:
             requestSMSAcknowledge(data, datalen, t);
